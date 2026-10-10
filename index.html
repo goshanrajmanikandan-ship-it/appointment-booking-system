@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f4f2">
+  <meta name="description" content="Calendra is a calm, precise appointment scheduling workspace.">
+  <title>Calendra — Make time matter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main sidebar">
+      <a class="brand" href="#overview" aria-label="Calendra home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="4.5" y="7" width="23" height="21" rx="6"/><path d="M10 4.5V10M22 4.5V10M5 13H27M10 18H13M19 18H22M10 22.5H13"/></svg></span>
+        <span class="brand-word">calendra<span>APPOINTMENT STUDIO</span></span>
+      </a>
+
+      <div class="sidebar-label">WORKSPACE</div>
+      <nav class="nav-menu" aria-label="Workspace navigation">
+        <button class="nav-item active" data-view="overview" aria-current="page"><span class="nav-symbol">◫</span><span>Overview</span><kbd>01</kbd></button>
+        <button class="nav-item" data-view="book"><span class="nav-symbol">＋</span><span>New appointment</span><kbd>02</kbd></button>
+        <button class="nav-item" data-view="appointments"><span class="nav-symbol">▤</span><span>Appointments</span><span class="nav-count" id="navCount">0</span></button>
+      </nav>
+
+      <div class="sidebar-note">
+        <div class="note-icon">✳</div>
+        <p class="note-eyebrow">A calmer way to plan</p>
+        <p class="note-copy">Your time is valuable. Give it a place to belong.</p>
+        <button class="quiet-link" id="helpButton">Explore the workspace <span>↗</span></button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="profile-avatar" aria-hidden="true">C</div>
+        <div class="profile-copy"><strong>Calendra Studio</strong><span>Personal workspace</span></div>
+        <button class="icon-button subtle" id="profileMenu" aria-label="Workspace information" title="Workspace information">···</button>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button mobile-menu" id="mobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
+          <div class="breadcrumb"><span>Workspace</span><b>/</b><strong id="breadcrumbCurrent">Overview</strong></div>
+        </div>
+        <div class="topbar-actions">
+          <span class="system-status"><i></i> All systems ready</span>
+          <button class="icon-button" id="themeToggle" aria-label="Switch to dark theme" title="Toggle appearance"><span id="themeIcon">◐</span></button>
+          <div class="top-avatar" aria-label="Calendra Studio">C</div>
+        </div>
+      </header>
+
+      <main id="main" class="main-content">
+        <section class="view active" id="overviewView" aria-labelledby="overviewTitle">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow"><span></span> YOUR SCHEDULING SPACE</div>
+              <h1 id="overviewTitle">Make time for<br><em>what matters.</em></h1>
+              <p class="page-subtitle">A little more clarity. A lot more room to focus.</p>
+            </div>
+            <button class="button button-primary" data-go="book"><span>＋</span> New appointment <span class="button-arrow">↗</span></button>
+          </div>
+
+          <section class="hero-card" aria-label="Welcome">
+            <div class="hero-copy">
+              <span class="hero-kicker"><span class="sparkle">✳</span> YOUR DAY, IN FOCUS</span>
+              <h2>Good plans start<br>with <em>good timing.</em></h2>
+              <p>Bring your appointments into one calm, considered space. Plan ahead and keep your day moving.</p>
+              <button class="button button-light" data-go="book">Schedule an appointment <span>→</span></button>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+              <div class="visual-ring ring-one"></div><div class="visual-ring ring-two"></div>
+              <div class="visual-orb"></div>
+              <div class="mini-calendar">
+                <div class="mini-cal-head"><span class="mini-dots">•••</span><span id="heroMonth">YOUR CALENDAR</span><span>↗</span></div>
+                <div class="mini-week"><i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i></div>
+                <div class="mini-days" id="heroCalendar"></div>
+              </div>
+              <div class="floating-card floating-confirm"><span class="confirm-check">✓</span><span><b>All set</b><small>Appointment confirmed</small></span></div>
+              <div class="floating-card floating-time"><span class="time-icon">◷</span><span><b>10:30 AM</b><small>A moment for you</small></span></div>
+              <span class="hero-star star-a">✦</span><span class="hero-star star-b">✧</span>
+            </div>
+          </section>
+
+          <div class="section-heading">
+            <div><span class="eyebrow">AT A GLANCE</span><h2>Your overview</h2><p>A live snapshot of your schedule.</p></div>
+            <span class="live-label"><i></i> UP TO DATE</span>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <div class="stat-top"><span>Total appointments</span><span class="stat-icon">▤</span></div>
+              <div class="stat-value" id="totalStat">00</div><div class="stat-foot"><span class="tiny-dot"></span> All bookings created</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>Upcoming</span><span class="stat-icon">◷</span></div>
+              <div class="stat-value" id="upcomingStat">00</div><div class="stat-foot"><span class="tiny-dot"></span> Still ahead of you</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>Completed</span><span class="stat-icon">✓</span></div>
+              <div class="stat-value" id="completedStat">00</div><div class="stat-foot"><span class="tiny-dot"></span> Time well spent</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>Cancelled</span><span class="stat-icon">↗</span></div>
+              <div class="stat-value" id="cancelledStat">00</div><div class="stat-foot"><span class="tiny-dot"></span> Kept for your records</div>
+            </article>
+          </div>
+
+          <section class="content-panel recent-panel">
+            <div class="panel-heading"><div><h2>Coming up</h2><p>Your next moments, already planned.</p></div><button class="text-action" data-go="appointments">View all <span>→</span></button></div>
+            <div id="upcomingList" class="appointment-list"></div>
+          </section>
+
+          <footer class="page-footer"><span>CALENDRA STUDIO</span><span>Make time matter.</span><span id="todayLabel"></span></footer>
+        </section>
+
+        <section class="view" id="bookView" aria-labelledby="bookTitle" hidden>
+          <div class="page-heading compact-heading">
+            <div><div class="eyebrow"><span></span> PLAN SOMETHING GOOD</div><h1 id="bookTitle">Make it <em>official.</em></h1><p class="page-subtitle">Choose a time that works for you. We’ll keep the details together.</p></div>
+            <div class="step-indicator"><span class="step-current" id="stepCurrent">01</span><span class="step-line"></span><span>02</span><small>DETAILS <b>—</b> CONFIRM</small></div>
+          </div>
+
+          <div class="booking-layout">
+            <form id="bookingForm" class="booking-form" novalidate>
+              <section class="form-panel">
+                <div class="form-section-heading"><span class="section-number">01</span><div><h2>Your details</h2><p>Who should we reserve this time for?</p></div></div>
+                <div class="field-grid">
+                  <div class="field full-field"><label for="fullName">Full name <span>*</span></label><input id="fullName" name="fullName" type="text" autocomplete="name" placeholder="e.g. Alex Morgan" maxlength="80" required aria-describedby="nameError"><small class="field-error" id="nameError"></small></div>
+                  <div class="field"><label for="email">Email address <span>*</span></label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" maxlength="120" required aria-describedby="emailError"><small class="field-error" id="emailError"></small></div>
+                  <div class="field"><label for="phone">Phone number</label><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210" maxlength="20" aria-describedby="phoneError"><small class="field-error" id="phoneError"></small></div>
+                  <div class="field full-field"><label for="appointmentTitle">Appointment title <span>*</span></label><input id="appointmentTitle" name="appointmentTitle" type="text" placeholder="e.g. Project discussion" maxlength="100" required aria-describedby="titleError"><small class="field-error" id="titleError"></small></div>
+                </div>
+              </section>
+
+              <section class="form-panel">
+                <div class="form-section-heading"><span class="section-number">02</span><div><h2>Find your time</h2><p>Select a date first, then choose an available slot.</p></div></div>
+                <div class="field date-field"><label for="appointmentDate">Appointment date <span>*</span></label><input id="appointmentDate" name="appointmentDate" type="date" required aria-describedby="dateError"><small class="field-error" id="dateError"></small></div>
+                <div class="slot-heading"><span>Available time slots</span><span id="slotDateLabel">Choose a date</span></div>
+                <div id="timeSlots" class="time-slots" role="group" aria-label="Available appointment times"><div class="slot-placeholder">Select a date to see available times.</div></div>
+                <small class="field-error" id="timeError"></small>
+                <div class="field notes-field"><div class="label-row"><label for="notes">Notes <span class="optional">(optional)</span></label><span id="notesCount">0 / 300</span></div><textarea id="notes" name="notes" rows="3" maxlength="300" placeholder="Anything we should know before we meet?"></textarea></div>
+              </section>
+              <div class="form-actions"><button class="button button-secondary" type="button" data-go="overview">Back to overview</button><button class="button button-primary" type="submit">Review appointment <span>→</span></button></div>
+            </form>
+
+            <aside class="booking-aside">
+              <div class="summary-card">
+                <div class="summary-top"><span class="summary-mark">C</span><span>YOUR BOOKING</span><span class="summary-line"></span></div>
+                <h3>A little time,<br><em>well spent.</em></h3>
+                <p>Your appointment summary will take shape as you fill in the details.</p>
+                <div class="summary-divider"></div>
+                <div class="summary-row"><span>Attendee</span><strong id="summaryName">Your name</strong></div>
+                <div class="summary-row"><span>Appointment</span><strong id="summaryTitle">Not set</strong></div>
+                <div class="summary-row"><span>Date</span><strong id="summaryDate">Choose a date</strong></div>
+                <div class="summary-row"><span>Time</span><strong id="summaryTime">Choose a slot</strong></div>
+                <div class="summary-bottom"><span class="secure-dot"></span><span>Details stay in this browser</span></div>
+              </div>
+              <div class="aside-tip"><span>✳</span><div><strong>A thoughtful reminder</strong><p>Choose a slot you can comfortably make. You can cancel later from your appointments list.</p></div></div>
+            </aside>
+          </div>
+          <footer class="page-footer"><span>CALENDRA STUDIO</span><span>Make time matter.</span><span id="bookTodayLabel"></span></footer>
+        </section>
+
+        <section class="view" id="appointmentsView" aria-labelledby="appointmentsTitle" hidden>
+          <div class="page-heading compact-heading">
+            <div><div class="eyebrow"><span></span> YOUR TIME, IN ONE PLACE</div><h1 id="appointmentsTitle">Every plan, <em>in view.</em></h1><p class="page-subtitle">Search, manage and keep your schedule in good shape.</p></div>
+            <button class="button button-primary" data-go="book"><span>＋</span> New appointment</button>
+          </div>
+          <section class="content-panel manage-panel">
+            <div class="manage-toolbar">
+              <label class="search-box"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search appointments…" aria-label="Search appointments"></label>
+              <div class="toolbar-right"><select id="statusFilter" aria-label="Filter by status"><option value="all">All appointments</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select><button class="button button-secondary export-button" id="exportButton" type="button">Export CSV ↗</button></div>
+            </div>
+            <div class="table-head"><span>APPOINTMENT</span><span>DATE & TIME</span><span>STATUS</span><span>ACTION</span></div>
+            <div id="appointmentsList" class="appointment-list managed-list"></div>
+            <div id="listFooter" class="list-footer"></div>
+          </section>
+          <footer class="page-footer"><span>CALENDRA STUDIO</span><span>Make time matter.</span><span id="appointmentsTodayLabel"></span></footer>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toastRegion" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <dialog class="confirm-dialog" id="confirmModal" aria-labelledby="modalTitle">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" value="keep" aria-label="Close dialog">×</button>
+      <div class="dialog-icon" id="modalIcon">✳</div>
+      <span class="eyebrow">ONE LAST LOOK</span>
+      <h2 id="modalTitle">Confirm your appointment</h2>
+      <p id="modalMessage">Review the details before saving your appointment.</p>
+      <div id="modalSummary" class="modal-summary"></div>
+      <div class="dialog-actions"><button class="button button-secondary" value="keep" id="modalKeep">Keep editing</button><button class="button button-primary" value="confirm" id="modalConfirm">Confirm booking <span>→</span></button></div>
+    </form>
+  </dialog>
+
+  <dialog class="confirm-dialog" id="cancelModal" aria-labelledby="cancelTitle">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" value="keep" aria-label="Close dialog">×</button>
+      <div class="dialog-icon warning-icon">!</div>
+      <span class="eyebrow">PLEASE CONFIRM</span>
+      <h2 id="cancelTitle">Cancel this appointment?</h2>
+      <p id="cancelMessage">This appointment will be marked as cancelled in your records.</p>
+      <div class="dialog-actions"><button class="button button-secondary" value="keep">Keep appointment</button><button class="button button-danger" value="confirm" id="cancelConfirm">Cancel appointment</button></div>
+    </form>
+  </dialog>
+
+  <div class="sr-only" id="liveRegion" aria-live="polite"></div>
+</body>
+</html>
