@@ -1,4 +1,4 @@
-# Calendra — 10/10 Frontend Edition
+# Calendra 
 
 A polished, responsive appointment booking interface built with semantic HTML, modern CSS, and vanilla JavaScript.
 
