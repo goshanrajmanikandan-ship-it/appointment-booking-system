@@ -3,8 +3,8 @@
 
   const STORAGE_KEY = "calendra_appointments_v3";
   const THEME_KEY = "calendra_theme_v2";
-  const SLOT_TIMES = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00"];
-  const state = { view: "overview", selectedTime: "", pendingBooking: null, pendingCancelId: null, search: "", filter: "all", toastTimer: null };
+  const { SLOT_TIMES, localISO, isPastSlot, effectiveStatus, loadAppointments: readStoredAppointments, saveAppointments: writeStoredAppointments, validateAppointment, cancelAppointment, toCSV } = window.CalendraCore;
+  const state = { view: "overview", selectedTime: "", pendingBooking: null, pendingCancelId: null, search: "", filter: "all" };
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
   const els = {
@@ -16,7 +16,6 @@
   };
 
   const pad = n => String(n).padStart(2, "0");
-  const localISO = (date = new Date()) => `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
   const parseISO = value => { const [y,m,d] = String(value || "").split("-").map(Number); return new Date(y, (m || 1)-1, d || 1, 12, 0, 0); };
   const fmtDate = value => value ? parseISO(value).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "Choose a date";
   const fmtLongDate = value => value ? parseISO(value).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"}) : "Choose a date";
@@ -25,34 +24,38 @@
   const initials = name => String(name || "?").trim().split(/\s+/).slice(0,2).map(s => s[0] || "").join("").toUpperCase();
   const makeId = () => `CAL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
   const startOfToday = () => localISO();
-  const isPastSlot = (date,time) => date < startOfToday() || (date === startOfToday() && time <= `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`);
   const sortBookings = list => [...list].sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
 
+  let storageReadFailed = false;
   function loadAppointments() {
     try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      if (!Array.isArray(data)) return [];
-      return data.filter(a => a && typeof a.id === "string" && typeof a.date === "string" && typeof a.time === "string" && typeof a.status === "string");
-    } catch (error) { console.warn("Calendra storage could not be read.", error); return []; }
+      return readStoredAppointments(localStorage, STORAGE_KEY);
+    } catch {
+      storageReadFailed = true;
+      console.warn("Calendra could not read saved appointments from browser storage.");
+      return [];
+    }
   }
   let appointments = loadAppointments();
-  function saveAppointments() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments)); return true; }
-    catch (error) { console.error("Calendra storage could not be saved.", error); toast("Storage unavailable","Your browser could not save this change. Check storage permissions or available space.","error"); return false; }
-  }
-  function effectiveStatus(a) {
-    if (a.status === "cancelled") return "cancelled";
-    return a.date < startOfToday() || (a.date === startOfToday() && a.time < `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`) ? "completed" : "upcoming";
+  function saveAppointments(nextAppointments) {
+    try {
+      writeStoredAppointments(localStorage, STORAGE_KEY, nextAppointments);
+      return true;
+    } catch {
+      console.error("Calendra could not save appointments to browser storage.");
+      toast("Storage unavailable","Your browser could not save this change. Check storage permissions or available space.","error");
+      return false;
+    }
   }
   function updateStatuses() {
-    let changed = false;
-    appointments = appointments.map(a => {
+    const updated = appointments.map(a => {
       if (a.status === "cancelled") return a;
       const status = effectiveStatus(a);
-      if (status !== a.status) { changed = true; return {...a,status}; }
-      return a;
+      return status === a.status ? a : {...a,status};
     });
-    if (changed) saveAppointments();
+    if (updated.some((appointment, index) => appointment !== appointments[index]) && saveAppointments(updated)) {
+      appointments = updated;
+    }
   }
   function toast(title,message,type="success") {
     const node = document.createElement("div");
@@ -179,28 +182,34 @@
     if(input) { if(message) input.setAttribute("aria-invalid","true"); else input.removeAttribute("aria-invalid"); }
   }
   function validateForm() {
-    let valid=true;
-    const name=els.name.value.trim(), email=els.email.value.trim(), phone=els.phone.value.trim(), title=els.title.value.trim(), date=els.date.value;
-    const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-    const phoneOk=!phone || /^[+()\d\s.-]{7,20}$/.test(phone);
-    const checks=[
-      ["nameError",name.length<2?"Enter your full name (at least 2 characters).":"",els.name],
-      ["emailError",!emailOk?"Enter a valid email address.":"",els.email],
-      ["phoneError",!phoneOk?"Enter a valid phone number or leave it blank.":"",els.phone],
-      ["titleError",title.length<3?"Enter an appointment title (at least 3 characters).":"",els.title],
-      ["dateError",!date?"Choose an appointment date.":date<startOfToday()?"Choose today or a future date.":"",els.date],
-      ["timeError",!state.selectedTime?"Choose an available time slot.":sameSlot(date,state.selectedTime)?"That slot was just booked. Choose another time.":"",null]
-    ];
-    checks.forEach(([id,message,input])=>{setError(id,message,input);if(message)valid=false;});
-    if(valid && isPastSlot(date,state.selectedTime)) {setError("timeError","That time has passed. Choose another slot.");valid=false;}
-    if(!valid) {
-      const firstInvalid=$("[aria-invalid='true']");
-      if(firstInvalid)firstInvalid.focus({preventScroll:false});
+    const errors = validateAppointment({
+      name: els.name.value,
+      email: els.email.value,
+      phone: els.phone.value,
+      title: els.title.value,
+      date: els.date.value,
+      time: state.selectedTime,
+      notes: els.notes.value
+    }, appointments);
+    const fields = {
+      name: ["nameError", els.name],
+      email: ["emailError", els.email],
+      phone: ["phoneError", els.phone],
+      title: ["titleError", els.title],
+      date: ["dateError", els.date]
+    };
+    Object.entries(fields).forEach(([key, [errorId, input]]) => setError(errorId, errors[key] || "", input));
+    setError("timeError", errors.time || "");
+    if (Object.keys(errors).length) {
+      const firstInvalid = $("[aria-invalid='true']");
+      if (firstInvalid) firstInvalid.focus({preventScroll:false});
       toast("Check your details","A few fields need your attention before you can continue.","error");
+      return false;
     }
-    return valid;
+    return true;
   }
   function openBookingReview() {
+    if (state.pendingBooking) return;
     const a={id:makeId(),name:els.name.value.trim(),email:els.email.value.trim(),phone:els.phone.value.trim(),title:els.title.value.trim(),date:els.date.value,time:state.selectedTime,notes:els.notes.value.trim(),status:"upcoming",createdAt:new Date().toISOString()};
     state.pendingBooking=a;
     $("#modalTitle").textContent="Confirm your appointment";
@@ -215,9 +224,21 @@
   function commitBooking() {
     const a=state.pendingBooking;
     if(!a)return;
-    if(sameSlot(a.date,a.time)) {state.pendingBooking=null; if(els.confirmModal.open)els.confirmModal.close("keep"); state.selectedTime="";renderSlots();toast("Slot no longer available","Someone may have booked this slot. Choose another time.","error");return;}
-    appointments.push(a);
-    if(!saveAppointments()){appointments=appointments.filter(x=>x.id!==a.id);return;}
+    let latest;
+    try { latest=readStoredAppointments(localStorage,STORAGE_KEY); }
+    catch { toast("Storage unavailable","Saved appointments could not be checked. Your booking was not saved.","error");return; }
+    if(Object.keys(validateAppointment(a,latest)).length) {
+      appointments=latest;
+      state.pendingBooking=null;
+      if(els.confirmModal.open)els.confirmModal.close("keep");
+      state.selectedTime="";
+      renderSlots();
+      toast("Slot no longer available","The date or time is no longer available. Choose another slot.","error");
+      return;
+    }
+    const updated=[...latest,a];
+    if(!saveAppointments(updated))return;
+    appointments=updated;
     state.pendingBooking=null;
     if(els.confirmModal.open)els.confirmModal.close("confirm");
     els.form.reset();state.selectedTime="";
@@ -235,10 +256,21 @@
   }
   function commitCancel() {
     const id=state.pendingCancelId;
-    const a=appointments.find(x=>x.id===id);
-    if(!a)return;
-    appointments=appointments.map(x=>x.id===id?{...x,status:"cancelled",cancelledAt:new Date().toISOString()}:x);
-    if(!saveAppointments())return;
+    let latest;
+    try { latest=readStoredAppointments(localStorage,STORAGE_KEY); }
+    catch { toast("Storage unavailable","Saved appointments could not be checked. No cancellation was made.","error");return; }
+    const appointment=latest.find(x=>x.id===id);
+    if(!appointment || effectiveStatus(appointment)!=="upcoming") {
+      appointments=latest;
+      state.pendingCancelId=null;
+      if(els.cancelModal.open)els.cancelModal.close("keep");
+      renderOverview();renderAppointments();
+      toast("Appointment unavailable","This appointment can no longer be cancelled.","error");
+      return;
+    }
+    const updated=cancelAppointment(latest,id);
+    if(!updated || !saveAppointments(updated))return;
+    appointments=updated;
     state.pendingCancelId=null;
     if(els.cancelModal.open)els.cancelModal.close("confirm");
     renderOverview();renderAppointments();renderSlots();
@@ -247,8 +279,7 @@
   function exportCSV() {
     const headers=["ID","Name","Email","Phone","Title","Date","Time","Status","Notes","Created at"];
     const rows=sortBookings(appointments).map(a=>[a.id,a.name,a.email,a.phone,a.title,a.date,fmtTime(a.time),effectiveStatus(a),a.notes,a.createdAt]);
-    const cell=value=>`"${String(value??"").replace(/"/g,'""')}"`;
-    const csv=[headers,...rows].map(row=>row.map(cell).join(",")).join("\r\n");
+    const csv=toCSV(headers,rows);
     const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
     const url=URL.createObjectURL(blob),link=document.createElement("a");
     link.href=url;link.download=`calendra-appointments-${localISO()}.csv`;document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
@@ -256,7 +287,6 @@
   }
   function bindEvents() {
     els.navItems.forEach(button=>button.addEventListener("click",()=>go(button.dataset.view)));
-    $$("[data-go]").forEach(button=>button.addEventListener("click",()=>go(button.dataset.go)));
     $("#mobileMenu").addEventListener("click",()=>{
       const open=els.sidebar.classList.toggle("open");$("#mobileMenu").setAttribute("aria-expanded",String(open));
     });
@@ -275,10 +305,6 @@
     els.form.addEventListener("submit",event=>{event.preventDefault();if(validateForm())openBookingReview();});
     [els.name,els.email,els.phone,els.title,els.notes].forEach(input=>input.addEventListener("input",updateSummary));
     els.date.addEventListener("change",()=>{state.selectedTime="";setError("dateError","",els.date);setError("timeError","");renderSlots();});
-    els.slots.addEventListener("click",event=>{
-      const button=event.target.closest("[data-time]");
-      if(button&&!button.disabled){state.selectedTime=button.dataset.time;renderSlots();}
-    });
     els.form.addEventListener("input",event=>{
       const input=event.target;
       const map={fullName:"nameError",email:"emailError",phone:"phoneError",appointmentTitle:"titleError",appointmentDate:"dateError"};
@@ -298,6 +324,12 @@
     window.addEventListener("storage",event=>{
       if(event.key===STORAGE_KEY){appointments=loadAppointments();renderOverview();renderAppointments();renderSlots();}
     });
+    window.addEventListener("error",()=>{
+      toast("Something went wrong","Please refresh the page and try again.","error");
+    });
+    window.addEventListener("unhandledrejection",()=>{
+      toast("Something went wrong","Please refresh the page and try again.","error");
+    });
   }
   function init() {
     let theme="light";try{theme=localStorage.getItem(THEME_KEY)||"light";}catch{}
@@ -305,6 +337,7 @@
     const minDate=startOfToday();els.date.min=minDate;
     $("#todayLabel").textContent=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
     bindEvents();renderOverview();renderAppointments();renderSlots();updateSummary();
+    if(storageReadFailed)toast("Saved appointments unavailable","Your browser could not load appointments from local storage.","error");
   }
   init();
 })();

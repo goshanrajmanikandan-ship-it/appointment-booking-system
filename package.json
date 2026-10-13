@@ -1,0 +1,11 @@
+{
+  "name": "calendra-appointment-booking",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "test:coverage": "node --experimental-test-coverage --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
