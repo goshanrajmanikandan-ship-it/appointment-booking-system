@@ -103,6 +103,22 @@ test("loads only valid stored records and treats an empty store as no bookings",
   assert.throws(() => loadAppointments({ getItem: () => "{" }, "records"), SyntaxError);
 });
 
+test("rejects stored records that violate booking field constraints", () => {
+  const valid = savedBooking();
+  const invalidRecords = [
+    { ...valid, id: "" },
+    { ...valid, name: "A" },
+    { ...valid, email: "not-an-email" },
+    { ...valid, phone: "letters only" },
+    { ...valid, title: "Hi" },
+    { ...valid, notes: "x".repeat(301) },
+    { ...valid, createdAt: "yesterday" },
+    { ...valid, cancelledAt: "not-a-timestamp" }
+  ];
+  const storage = { getItem: () => JSON.stringify([valid, ...invalidRecords]) };
+  assert.deepEqual(loadAppointments(storage, "records"), [valid]);
+});
+
 test("propagates storage write failures so the UI can report them", () => {
   const error = new Error("storage disabled");
   assert.throws(() => saveAppointments({ setItem: () => { throw error; } }, "records", []), error);

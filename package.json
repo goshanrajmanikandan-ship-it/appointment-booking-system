@@ -2,6 +2,7 @@
   "name": "calendra-appointment-booking",
   "private": true,
   "scripts": {
+    "check": "node --check booking-core.js && node --check script.js",
     "test": "node --test",
     "test:coverage": "node --experimental-test-coverage --test"
   },

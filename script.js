@@ -322,7 +322,7 @@
       if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="n"){event.preventDefault();go("book");els.name.focus();}
     });
     window.addEventListener("storage",event=>{
-      if(event.key===STORAGE_KEY){appointments=loadAppointments();renderOverview();renderAppointments();renderSlots();}
+      if(event.key===STORAGE_KEY || event.key===null){appointments=loadAppointments();renderOverview();renderAppointments();renderSlots();}
     });
     window.addEventListener("error",()=>{
       toast("Something went wrong","Please refresh the page and try again.","error");

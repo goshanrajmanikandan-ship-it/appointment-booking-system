@@ -53,6 +53,8 @@ Browser UI (index.html + style.css)
 
 The browser UI calls the shared core for validation, slot checks, cancellation state changes, CSV escaping, and LocalStorage record parsing. The application has no backend service, API client, database driver, authentication layer, or network booking workflow.
 
+Records loaded from LocalStorage are checked against the booking field constraints before they are rendered or exported. Invalid records are ignored; malformed JSON or unavailable storage is surfaced as a friendly browser notification.
+
 ## 7. Installation and setup
 
 1. Clone or download this repository.
@@ -136,13 +138,14 @@ The app checks for an existing active booking again immediately before saving an
 
 ## 13. Unit testing and integration testing
 
-Run the unit tests with:
+Run the JavaScript syntax check and unit tests with:
 
 ```sh
+npm run check
 npm test
 ```
 
-The tests cover valid and invalid booking inputs, empty fields, field boundaries, malformed and past dates, same-day past slots, duplicate active bookings, cancelled-slot reuse, status calculation, cancellation, storage parsing/errors, CSV quoting, and spreadsheet-formula protection.
+The tests cover valid and invalid booking inputs, empty fields, field boundaries, malformed and past dates, same-day past slots, duplicate active bookings, cancelled-slot reuse, status calculation, cancellation, stored-record integrity, storage parsing/errors, CSV quoting, and spreadsheet-formula protection.
 
 There are no backend endpoints or database to integration-test. The project does not currently have automated browser end-to-end tests; the booking confirmation and cancellation dialogs should be checked manually in a browser when changing UI event handling.
 

@@ -10,6 +10,8 @@
     "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
   ]);
   const STATUSES = new Set(["upcoming", "completed", "cancelled"]);
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const PHONE_PATTERN = /^[+()\d\s.-]{7,20}$/;
 
   const pad = value => String(value).padStart(2, "0");
 
@@ -38,18 +40,22 @@
   }
 
   function isStoredAppointment(appointment) {
+    const isISODateTime = value => typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+    const validPhone = appointment && typeof appointment.phone === "string" &&
+      (!appointment.phone || (PHONE_PATTERN.test(appointment.phone) && /\d/.test(appointment.phone)));
     return Boolean(
       appointment &&
-      typeof appointment.id === "string" &&
-      typeof appointment.name === "string" &&
-      typeof appointment.email === "string" &&
-      typeof appointment.phone === "string" &&
-      typeof appointment.title === "string" &&
+      typeof appointment.id === "string" && appointment.id.length > 0 && appointment.id.length <= 80 &&
+      typeof appointment.name === "string" && appointment.name.trim().length >= 2 && appointment.name.trim().length <= 80 &&
+      typeof appointment.email === "string" && appointment.email.length <= 120 && EMAIL_PATTERN.test(appointment.email) &&
+      validPhone &&
+      typeof appointment.title === "string" && appointment.title.trim().length >= 3 && appointment.title.trim().length <= 100 &&
       isValidDate(appointment.date) &&
       SLOT_TIMES.includes(appointment.time) &&
       STATUSES.has(appointment.status) &&
-      typeof appointment.notes === "string" &&
-      typeof appointment.createdAt === "string"
+      typeof appointment.notes === "string" && appointment.notes.length <= 300 &&
+      isISODateTime(appointment.createdAt) &&
+      (appointment.cancelledAt === undefined || isISODateTime(appointment.cancelledAt))
     );
   }
 
@@ -70,8 +76,8 @@
     const date = String(fields.date ?? "");
     const time = String(fields.time ?? "");
     const errors = {};
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-    const phoneOk = !phone || (/^[+()\d\s.-]{7,20}$/.test(phone) && /\d/.test(phone));
+    const emailOk = EMAIL_PATTERN.test(email);
+    const phoneOk = !phone || (PHONE_PATTERN.test(phone) && /\d/.test(phone));
 
     if (name.length < 2 || name.length > 80) errors.name = "Enter your full name (2–80 characters).";
     if (!emailOk || email.length > 120) errors.email = "Enter a valid email address.";
